@@ -105,16 +105,18 @@ discord:
   mc-server-name: "Minecraft Server"
   # TR: Webhook profil resmi URL'si (boş bırakılabilir).
   # EN: Webhook avatar URL (optional).
-  avatar-url: ''
+  # TR: Bu alanda {creator}, {player}, {content}, {server} ve PlaceholderAPI placeholder'lari calisir.
+  # EN: This field supports {creator}, {player}, {content}, {server} and PlaceholderAPI placeholders.
+  avatar-url: 'https://minotar.net/helm/{creator}/100.png'
   # TR: Embed başlığı. Desteklenen yerleşik placeholderlar: {creator}, {player}, {content}, {server}
   # EN: Embed title. Supported built-in placeholders: {creator}, {player}, {content}, {server}
   embed-title: "Alt Account Detection - {creator}"
   # TR: Embed açıklaması. Aynı placeholderlar geçerlidir.
   # EN: Embed description. Same placeholders are supported.
   embed-description: "`{content}`"
-  # TR: Embed küçük resim (thumbnail) URL'si. Varsayılan oyuncu kafa resmi kullanır.
-  # EN: Embed thumbnail URL. Default uses player head image.
-  embed-thumbnail-url: 'https://minotar.net/helm/{creator}/100.png'
+  # TR: Embed küçük resim (thumbnail) URL'si. Kullanmak istemiyorsan boş bırak.
+  # EN: Embed thumbnail URL. Leave empty to disable it.
+  embed-thumbnail-url: ''
   # TR: Embed renk kodu (hex). Örn: 0xff0000
   # EN: Embed color in hex. Example: 0xff0000
   embed-color: 0xff0000

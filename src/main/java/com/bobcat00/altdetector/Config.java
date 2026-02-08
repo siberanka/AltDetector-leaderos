@@ -20,6 +20,9 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.nio.charset.Charset;
 
 public class Config
@@ -224,7 +227,7 @@ public class Config
 
     public String getDiscordEmbedThumbnailUrl()
     {
-        return plugin.getConfig().getString("discord.embed-thumbnail-url", "https://minotar.net/helm/{creator}/100.png");
+        return plugin.getConfig().getString("discord.embed-thumbnail-url", "");
     }
     
     public String getDiscordAvatarUrl()
@@ -254,9 +257,91 @@ public class Config
             plugin.getConfig().set(path, defaultValue);
         }
     }
+
+    private void pruneUnknownEntries()
+    {
+        Set<String> rootAllowed = new HashSet<>(Arrays.asList(
+            "expiration-time",
+            "database-type",
+            "mysql",
+            "convert-from",
+            "sql-debug",
+            "join-player-prefix",
+            "join-player",
+            "join-player-list",
+            "join-player-separator",
+            "altcmd-player",
+            "altcmd-player-list",
+            "altcmd-player-separator",
+            "altcmd-playernoalts",
+            "altcmd-noalts",
+            "altcmd-playernotfound",
+            "altcmd-paramerror",
+            "altcmd-noperm",
+            "delcmd-removedsingular",
+            "delcmd-removedplural",
+            "placeholder-enabled",
+            "placeholder-separator",
+            "discord"
+        ));
+
+        Set<String> mysqlAllowed = new HashSet<>(Arrays.asList(
+            "hostname",
+            "username",
+            "password",
+            "database",
+            "prefix",
+            "port",
+            "jdbcurl-properties"
+        ));
+
+        Set<String> discordAllowed = new HashSet<>(Arrays.asList(
+            "enabled",
+            "webhook-url",
+            "username",
+            "mc-server-name",
+            "avatar-url",
+            "embed-title",
+            "embed-description",
+            "embed-thumbnail-url",
+            "embed-color"
+        ));
+
+        for (String key : plugin.getConfig().getKeys(false))
+        {
+            if (!rootAllowed.contains(key))
+            {
+                plugin.getConfig().set(key, null);
+            }
+        }
+
+        if (plugin.getConfig().isConfigurationSection("mysql"))
+        {
+            for (String key : plugin.getConfig().getConfigurationSection("mysql").getKeys(false))
+            {
+                if (!mysqlAllowed.contains(key))
+                {
+                    plugin.getConfig().set("mysql." + key, null);
+                }
+            }
+        }
+
+        if (plugin.getConfig().isConfigurationSection("discord"))
+        {
+            for (String key : plugin.getConfig().getConfigurationSection("discord").getKeys(false))
+            {
+                if (!discordAllowed.contains(key))
+                {
+                    plugin.getConfig().set("discord." + key, null);
+                }
+            }
+        }
+    }
     
     public void updateConfig()
     {
+        pruneUnknownEntries();
+
         if (!contains("expiration-time", true))
         {
             if (contains("expirationtime", true))
@@ -378,10 +463,10 @@ public class Config
             plugin.getConfig().set("discord.webhook-url",    "");
             plugin.getConfig().set("discord.username",       "AltDetector");
             plugin.getConfig().set("discord.mc-server-name", "Minecraft Server");
-            plugin.getConfig().set("discord.avatar-url",     "");
+            plugin.getConfig().set("discord.avatar-url",     "https://minotar.net/helm/{creator}/100.png");
             plugin.getConfig().set("discord.embed-title", "Alt Account Detection");
             plugin.getConfig().set("discord.embed-description", "`{content}`");
-            plugin.getConfig().set("discord.embed-thumbnail-url", "https://minotar.net/helm/{creator}/100.png");
+            plugin.getConfig().set("discord.embed-thumbnail-url", "");
             plugin.getConfig().set("discord.embed-color",    0xff0000);
         }
 
@@ -397,7 +482,7 @@ public class Config
 
         if (!contains("discord.embed-thumbnail-url", true))
         {
-            plugin.getConfig().set("discord.embed-thumbnail-url", "https://minotar.net/helm/{creator}/100.png");
+            plugin.getConfig().set("discord.embed-thumbnail-url", "");
         }
 
         // Ensure every key is present even if the user has a partial config.yml.
@@ -432,10 +517,10 @@ public class Config
         ensureDefault("discord.webhook-url", "");
         ensureDefault("discord.username", "AltDetector");
         ensureDefault("discord.mc-server-name", "Minecraft Server");
-        ensureDefault("discord.avatar-url", "");
+        ensureDefault("discord.avatar-url", "https://minotar.net/helm/{creator}/100.png");
         ensureDefault("discord.embed-title", "Alt Account Detection");
         ensureDefault("discord.embed-description", "`{content}`");
-        ensureDefault("discord.embed-thumbnail-url", "https://minotar.net/helm/{creator}/100.png");
+        ensureDefault("discord.embed-thumbnail-url", "");
         ensureDefault("discord.embed-color", 0xff0000);
         
         saveConfig();

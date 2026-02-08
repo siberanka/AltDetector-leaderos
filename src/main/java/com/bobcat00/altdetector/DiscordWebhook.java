@@ -34,11 +34,10 @@ public class DiscordWebhook
     private final AltDetector plugin;
     private final String webhookUrl;
     private final String username;
-    private final String avatarUrl;
+    private final String avatarUrlTemplate;
     private final int embedColor;
     private final String embedTitleTemplate;
     private final String embedDescriptionTemplate;
-    private final String embedThumbnailTemplate;
     
     // -------------------------------------------------------------------------
     
@@ -49,11 +48,10 @@ public class DiscordWebhook
         this.plugin     = plugin;
         this.webhookUrl = plugin.config.getDiscordWebhookUrl();
         this.username   = plugin.config.getDiscordUsername();
-        this.avatarUrl  = plugin.config.getDiscordAvatarUrl();
+        this.avatarUrlTemplate  = plugin.config.getDiscordAvatarUrl();
         this.embedColor = plugin.config.getDiscordEmbedColor();
         this.embedTitleTemplate = plugin.config.getDiscordEmbedTitle();
         this.embedDescriptionTemplate = plugin.config.getDiscordEmbedDescription();
-        this.embedThumbnailTemplate = plugin.config.getDiscordEmbedThumbnailUrl();
     }
     
     // -------------------------------------------------------------------------
@@ -82,6 +80,10 @@ public class DiscordWebhook
                 {
                     // Build the JSON payload
                     Map<String, Object> jsonMap = new HashMap<>();
+                    String authorName = plugin.config.getMCServerName();
+                    String title = applyPlaceholders(embedTitleTemplate, playerName, content, authorName);
+                    String description = applyPlaceholders(embedDescriptionTemplate, playerName, content, authorName);
+                    String avatarUrl = applyPlaceholders(avatarUrlTemplate, playerName, content, authorName);
                     
                     // Set username if provided
                     if (username != null && !username.isEmpty())
@@ -94,11 +96,6 @@ public class DiscordWebhook
                     {
                         jsonMap.put("avatar_url", avatarUrl);
                     }
-                    
-                    String authorName = plugin.config.getMCServerName();
-                    String title = applyPlaceholders(embedTitleTemplate, playerName, content, authorName);
-                    String description = applyPlaceholders(embedDescriptionTemplate, playerName, content, authorName);
-                    String thumbnailUrl = applyPlaceholders(embedThumbnailTemplate, playerName, content, authorName);
 
                     // Create embed
                     Map<String, Object> embed = new HashMap<>();
@@ -111,13 +108,6 @@ public class DiscordWebhook
                     author.put("name", authorName);
                     embed.put("author", author);
 
-                    if (thumbnailUrl != null && !thumbnailUrl.isEmpty())
-                    {
-                        Map<String, Object> thumbnail = new HashMap<>();
-                        thumbnail.put("url", thumbnailUrl);
-                        embed.put("thumbnail", thumbnail);
-                    }
-                    
                     // Add timestamp
                     embed.put("timestamp", java.time.OffsetDateTime.now().toString());
                     
