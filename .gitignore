@@ -19,3 +19,6 @@ dependency-reduced-pom.xml
 # VsCode
 .vscode/
 .vscode-test/
+
+# Local private notes (do not commit)
+.local/

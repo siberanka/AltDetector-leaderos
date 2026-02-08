@@ -17,7 +17,10 @@
 package com.bobcat00.altdetector;
 
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -26,13 +29,21 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.metadata.MetadataValue;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.scheduler.BukkitTask;
 
 import de.myzelyam.api.vanish.VanishAPI;
 
 public class Listeners implements Listener
 {
+    private static final String LEADEROS_AUTH_PLUGIN_NAME = "LeaderOS-Auth";
+
     private AltDetector plugin;
+    private final Map<UUID, BukkitTask> authWaitTasks = new ConcurrentHashMap<>();
+    private final Set<UUID> processedPlayers = ConcurrentHashMap.newKeySet();
+    private boolean authReflectionFailureLogged = false;
     
     // Constructor
     
@@ -142,18 +153,59 @@ public class Listeners implements Listener
     public void onPlayerJoin(PlayerJoinEvent event)
     {
         Player player = event.getPlayer();
-        
+
+        if (shouldWaitForLeaderosAuth(player))
+        {
+            scheduleAuthenticatedProcessing(player);
+            return;
+        }
+
+        processPlayer(player);
+    }
+
+    // -------------------------------------------------------------------------
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event)
+    {
+        UUID playerId = event.getPlayer().getUniqueId();
+        processedPlayers.remove(playerId);
+
+        BukkitTask task = authWaitTasks.remove(playerId);
+        if (task != null)
+        {
+            task.cancel();
+        }
+    }
+
+    // -------------------------------------------------------------------------
+
+    private void processPlayer(Player player)
+    {
+        UUID playerId = player.getUniqueId();
+
+        if (!processedPlayers.add(playerId))
+        {
+            return;
+        }
+
         // Skip if player is exempt
         if (player.hasPermission("altdetector.exempt"))
         {
             return;
         }
-        
+
+        if (player.getAddress() == null || player.getAddress().getAddress() == null)
+        {
+            processedPlayers.remove(playerId);
+            return;
+        }
+
         // Get info about this player
         final String ip = player.getAddress().getAddress().getHostAddress().toLowerCase(Locale.ROOT).split("%")[0];
-        final String uuid = player.getUniqueId().toString();
+        final String uuid = playerId.toString();
         final String name = player.getName();
-        
+
         // Add to the database - async (mostly)
         updateDatabaseGetAlts(ip, uuid, name, new Callback<String, String>()
         {
@@ -183,7 +235,7 @@ public class Listeners implements Listener
                 {
                     if (p.hasPermission("altdetector.notify"))
                     {
-                        // Output if recipient has seevanished perm OR player is not vanished 
+                        // Output if recipient has seevanished perm OR player is not vanished
                         if (p.hasPermission("altdetector.notify.seevanished") || !isVanished(player, p))
                         {
                             p.sendMessage(notifyString);
@@ -194,11 +246,97 @@ public class Listeners implements Listener
                 // Send to Discord webhook if enabled
                 if (plugin.config.isDiscordEnabled() && plugin.discordWebhook != null && player != null)
                 {
-                    plugin.discordWebhook.sendAltMessage(cleanAltString, plugin.config.getMCServerName());
+                    plugin.discordWebhook.sendAltMessage(cleanAltString, player.getName());
                 }
             }
         }
         );
+    }
+
+    // -------------------------------------------------------------------------
+
+    private boolean shouldWaitForLeaderosAuth(Player player)
+    {
+        Plugin authPlugin = plugin.getServer().getPluginManager().getPlugin(LEADEROS_AUTH_PLUGIN_NAME);
+
+        if (authPlugin == null || !authPlugin.isEnabled())
+        {
+            return false;
+        }
+
+        return !isLeaderosAuthenticated(player);
+    }
+
+    // -------------------------------------------------------------------------
+
+    private void scheduleAuthenticatedProcessing(final Player player)
+    {
+        final UUID playerId = player.getUniqueId();
+
+        BukkitTask existingTask = authWaitTasks.remove(playerId);
+        if (existingTask != null)
+        {
+            existingTask.cancel();
+        }
+
+        BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                Player onlinePlayer = Bukkit.getPlayer(playerId);
+                if (onlinePlayer == null || !onlinePlayer.isOnline())
+                {
+                    BukkitTask removed = authWaitTasks.remove(playerId);
+                    if (removed != null)
+                    {
+                        removed.cancel();
+                    }
+                    return;
+                }
+
+                if (isLeaderosAuthenticated(onlinePlayer))
+                {
+                    BukkitTask removed = authWaitTasks.remove(playerId);
+                    if (removed != null)
+                    {
+                        removed.cancel();
+                    }
+
+                    processPlayer(onlinePlayer);
+                }
+            }
+        }, 10L, 20L);
+
+        authWaitTasks.put(playerId, task);
+    }
+
+    // -------------------------------------------------------------------------
+
+    private boolean isLeaderosAuthenticated(Player player)
+    {
+        try
+        {
+            Class<?> clazz = Class.forName("net.leaderos.auth.bukkit.Bukkit");
+            Object instance = clazz.getMethod("getInstance").invoke(null);
+
+            if (instance == null)
+            {
+                return false;
+            }
+
+            Object result = clazz.getMethod("isAuthenticated", Player.class).invoke(instance, player);
+            return (result instanceof Boolean) && ((Boolean) result).booleanValue();
+        }
+        catch (Exception exception)
+        {
+            if (!authReflectionFailureLogged)
+            {
+                authReflectionFailureLogged = true;
+                plugin.getLogger().warning("LeaderOS-Auth integration failed, falling back to join-time checks: " + exception.getClass().getSimpleName());
+            }
+            return true;
+        }
     }
     
     // -------------------------------------------------------------------------

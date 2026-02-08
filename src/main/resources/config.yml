@@ -1,54 +1,120 @@
-# Data expiration time in days
+# TR: Verilerin (IP/oyuncu eşleşmeleri) kaç gün tutulacağını belirler.
+# EN: Sets how many days IP/player mappings are kept.
 expiration-time: 60
 
-# Database type sqlite, mysql
+# TR: Kullanılacak veritabanı tipi. Seçenekler: sqlite, mysql
+# EN: Database type to use. Options: sqlite, mysql
 database-type: sqlite
+
 mysql:
+  # TR: MySQL sunucu adresi (hostname veya IP).
+  # EN: MySQL server address (hostname or IP).
   hostname: 127.0.0.1
+  # TR: MySQL kullanıcı adı.
+  # EN: MySQL username.
   username: username
+  # TR: MySQL şifresi.
+  # EN: MySQL password.
   password: password
+  # TR: Veritabanı adı.
+  # EN: Database name.
   database: databasename
+  # TR: Oluşturulacak tablo adlarının ön eki.
+  # EN: Prefix for created table names.
   prefix: altdetector_
+  # TR: MySQL portu.
+  # EN: MySQL port.
   port: 3306
+  # TR: JDBC URL sonuna eklenecek ek parametreler.
+  # EN: Extra JDBC URL properties appended to the connection string.
   jdbcurl-properties: ''
 
-# Convert from yml, sqlite, mysql, none (normally handled automatically)
+# TR: Eski veriyi hangi kaynaktan dönüştüreceğini belirler. Seçenekler: none, yml, sqlite, mysql
+# EN: Sets the source to convert old data from. Options: none, yml, sqlite, mysql
 convert-from: none
-# Debug SQL statements
+
+# TR: SQL sorgularını konsola debug amaçlı yazdırır.
+# EN: Prints SQL queries to console for debugging.
 sql-debug: false
 
-# Messages when player joins the server
+# TR: Oyuncu için alt uyarısı gönderilirken mesajın başına eklenecek önek.
+# EN: Prefix added before join alt alert messages.
 join-player-prefix: "&b[AltDetector] "
+# TR: Join uyarı ana mesajı. {0} = giriş yapan oyuncu adı.
+# EN: Main join alert text. {0} = joining player name.
 join-player: "{0} may be an alt of "
+# TR: Join uyarısında listedeki her oyuncunun formatı. {0} = alt oyuncu adı.
+# EN: Format for each listed player in join alert. {0} = alt player name.
 join-player-list: "{0}"
+# TR: Join uyarısında listedeki oyuncuların ayıracı.
+# EN: Separator between players in join alert list.
 join-player-separator: ", "
 
-# Messages for alt command
+# TR: /alt komutunda ana mesaj. {0} = sorgulanan oyuncu.
+# EN: Main message for /alt command. {0} = queried player.
 altcmd-player: "&c{0}&6 may be an alt of "
+# TR: /alt komutunda listedeki her oyuncunun formatı. {0} = alt oyuncu adı.
+# EN: Format for each player in /alt output. {0} = alt player name.
 altcmd-player-list: "&c{0}"
+# TR: /alt komutundaki liste ayıracı.
+# EN: Separator for /alt player list.
 altcmd-player-separator: "&6, "
 
+# TR: Oyuncunun altı bulunmadığında gösterilecek mesaj. {0} = oyuncu adı.
+# EN: Message shown when no alts are found for a player. {0} = player name.
 altcmd-playernoalts: "&c{0}&6 has no known alts"
+# TR: Genel olarak alt bulunamadığında gösterilecek mesaj.
+# EN: Generic message when no alts are found.
 altcmd-noalts: "&6No alts found"
+# TR: Oyuncu bulunamadığında mesaj. {0} = girilen isim.
+# EN: Message when player cannot be found. {0} = input name.
 altcmd-playernotfound: "&4{0} not found"
+# TR: Hatalı parametre verildiğinde mesaj.
+# EN: Message for invalid command arguments.
 altcmd-paramerror: "&4Must specify at most one player"
+# TR: Yetki yoksa gösterilecek mesaj.
+# EN: Message shown when sender has no permission.
 altcmd-noperm: "&4You do not have permission for this command"
 
-# Messages for alt delete command
+# TR: /alt delete komutunda 1 kayıt silindiğinde mesaj. {0} = sayı.
+# EN: Message for /alt delete when 1 record is removed. {0} = count.
 delcmd-removedsingular: "&6{0} record removed"
+# TR: /alt delete komutunda birden fazla kayıt silindiğinde mesaj. {0} = sayı.
+# EN: Message for /alt delete when multiple records are removed. {0} = count.
 delcmd-removedplural: "&6{0} records removed"
 
-# PlaceholderAPI expansions
-# %altdetector_alts_<playername>%
-# <playername> is case-sensitive
+# TR: PlaceholderAPI genişletmesini aç/kapat.
+# EN: Enable/disable PlaceholderAPI expansion support.
 placeholder-enabled: true
+# TR: %altdetector_alts_<oyuncuadi>% çıktısında oyuncu isimleri arasındaki ayıraç.
+# EN: Separator used between names in %altdetector_alts_<playername>% output.
 placeholder-separator: ' '
 
-# Discord webhook integration
 discord:
+  # TR: Discord webhook entegrasyonunu aç/kapat.
+  # EN: Enable/disable Discord webhook integration.
   enabled: false
+  # TR: Discord webhook URL adresi.
+  # EN: Discord webhook URL.
   webhook-url: ''
+  # TR: Webhook gönderen adı.
+  # EN: Webhook sender username.
   username: 'AltDetector'
+  # TR: Embed author alanında görünecek sunucu adı.
+  # EN: Server name displayed in embed author field.
   mc-server-name: "Minecraft Server"
+  # TR: Webhook profil resmi URL'si (boş bırakılabilir).
+  # EN: Webhook avatar URL (optional).
   avatar-url: ''
+  # TR: Embed başlığı. Desteklenen yerleşik placeholderlar: {creator}, {player}, {content}, {server}
+  # EN: Embed title. Supported built-in placeholders: {creator}, {player}, {content}, {server}
+  embed-title: "Alt Account Detection - {creator}"
+  # TR: Embed açıklaması. Aynı placeholderlar geçerlidir.
+  # EN: Embed description. Same placeholders are supported.
+  embed-description: "`{content}`"
+  # TR: Embed küçük resim (thumbnail) URL'si. Varsayılan oyuncu kafa resmi kullanır.
+  # EN: Embed thumbnail URL. Default uses player head image.
+  embed-thumbnail-url: 'https://minotar.net/helm/{creator}/100.png'
+  # TR: Embed renk kodu (hex). Örn: 0xff0000
+  # EN: Embed color in hex. Example: 0xff0000
   embed-color: 0xff0000

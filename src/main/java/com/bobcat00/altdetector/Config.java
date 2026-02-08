@@ -211,6 +211,21 @@ public class Config
     {
         return plugin.getConfig().getString("discord.mc-server-name");
     }
+
+    public String getDiscordEmbedTitle()
+    {
+        return plugin.getConfig().getString("discord.embed-title", "Alt Account Detection");
+    }
+
+    public String getDiscordEmbedDescription()
+    {
+        return plugin.getConfig().getString("discord.embed-description", "`{content}`");
+    }
+
+    public String getDiscordEmbedThumbnailUrl()
+    {
+        return plugin.getConfig().getString("discord.embed-thumbnail-url", "https://minotar.net/helm/{creator}/100.png");
+    }
     
     public String getDiscordAvatarUrl()
     {
@@ -230,6 +245,14 @@ public class Config
     {
         // This duplicates the method added in 1.9, Bukkit commit facc9c353c3
         return ((ignoreDefault) ? plugin.getConfig().get(path, null) : plugin.getConfig().get(path)) != null;
+    }
+
+    private void ensureDefault(String path, Object defaultValue)
+    {
+        if (!contains(path, true))
+        {
+            plugin.getConfig().set(path, defaultValue);
+        }
     }
     
     public void updateConfig()
@@ -356,8 +379,64 @@ public class Config
             plugin.getConfig().set("discord.username",       "AltDetector");
             plugin.getConfig().set("discord.mc-server-name", "Minecraft Server");
             plugin.getConfig().set("discord.avatar-url",     "");
+            plugin.getConfig().set("discord.embed-title", "Alt Account Detection");
+            plugin.getConfig().set("discord.embed-description", "`{content}`");
+            plugin.getConfig().set("discord.embed-thumbnail-url", "https://minotar.net/helm/{creator}/100.png");
             plugin.getConfig().set("discord.embed-color",    0xff0000);
         }
+
+        if (!contains("discord.embed-title", true))
+        {
+            plugin.getConfig().set("discord.embed-title", "Alt Account Detection");
+        }
+
+        if (!contains("discord.embed-description", true))
+        {
+            plugin.getConfig().set("discord.embed-description", "`{content}`");
+        }
+
+        if (!contains("discord.embed-thumbnail-url", true))
+        {
+            plugin.getConfig().set("discord.embed-thumbnail-url", "https://minotar.net/helm/{creator}/100.png");
+        }
+
+        // Ensure every key is present even if the user has a partial config.yml.
+        ensureDefault("expiration-time", 60L);
+        ensureDefault("database-type", "sqlite");
+        ensureDefault("mysql.hostname", "127.0.0.1");
+        ensureDefault("mysql.username", "username");
+        ensureDefault("mysql.password", "password");
+        ensureDefault("mysql.database", "database");
+        ensureDefault("mysql.prefix", "altdetector_");
+        ensureDefault("mysql.port", 3306);
+        ensureDefault("mysql.jdbcurl-properties", "");
+        ensureDefault("convert-from", "none");
+        ensureDefault("sql-debug", false);
+        ensureDefault("join-player-prefix", "&b[AltDetector] ");
+        ensureDefault("join-player", "{0} may be an alt of ");
+        ensureDefault("join-player-list", "{0}");
+        ensureDefault("join-player-separator", ", ");
+        ensureDefault("altcmd-player", "&c{0}&6 may be an alt of ");
+        ensureDefault("altcmd-player-list", "&c{0}");
+        ensureDefault("altcmd-player-separator", "&6, ");
+        ensureDefault("altcmd-playernoalts", "&c{0}&6 has no known alts");
+        ensureDefault("altcmd-noalts", "&6No alts found");
+        ensureDefault("altcmd-playernotfound", "&4{0} not found");
+        ensureDefault("altcmd-paramerror", "&4Must specify at most one player");
+        ensureDefault("altcmd-noperm", "&4You do not have permission for this command");
+        ensureDefault("delcmd-removedsingular", "&6{0} record removed");
+        ensureDefault("delcmd-removedplural", "&6{0} records removed");
+        ensureDefault("placeholder-enabled", true);
+        ensureDefault("placeholder-separator", " ");
+        ensureDefault("discord.enabled", false);
+        ensureDefault("discord.webhook-url", "");
+        ensureDefault("discord.username", "AltDetector");
+        ensureDefault("discord.mc-server-name", "Minecraft Server");
+        ensureDefault("discord.avatar-url", "");
+        ensureDefault("discord.embed-title", "Alt Account Detection");
+        ensureDefault("discord.embed-description", "`{content}`");
+        ensureDefault("discord.embed-thumbnail-url", "https://minotar.net/helm/{creator}/100.png");
+        ensureDefault("discord.embed-color", 0xff0000);
         
         saveConfig();
     }
@@ -437,6 +516,9 @@ public class Config
             writer.write("  username: '"        + plugin.getConfig().getString("discord.username")                          + "'"  + "\n");
             writer.write("  mc-server-name: \"" + plugin.getConfig().getString("discord.mc-server-name")                    + "\"" + "\n");
             writer.write("  avatar-url: '"      + plugin.getConfig().getString("discord.avatar-url")                        + "'"  + "\n");
+            writer.write("  embed-title: \"" + plugin.getConfig().getString("discord.embed-title").replaceAll("\n", "\\\\n") + "\"" + "\n");
+            writer.write("  embed-description: \"" + plugin.getConfig().getString("discord.embed-description").replaceAll("\n", "\\\\n") + "\"" + "\n");
+            writer.write("  embed-thumbnail-url: '" + plugin.getConfig().getString("discord.embed-thumbnail-url") + "'" + "\n");
             writer.write("  embed-color: "      + String.format("0x%06x", plugin.getConfig().getInt("discord.embed-color"))        + "\n");
             
             writer.close();

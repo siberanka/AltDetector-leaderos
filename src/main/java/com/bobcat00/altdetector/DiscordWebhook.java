@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 
 public class DiscordWebhook
 {
@@ -35,6 +36,9 @@ public class DiscordWebhook
     private final String username;
     private final String avatarUrl;
     private final int embedColor;
+    private final String embedTitleTemplate;
+    private final String embedDescriptionTemplate;
+    private final String embedThumbnailTemplate;
     
     // -------------------------------------------------------------------------
     
@@ -47,6 +51,9 @@ public class DiscordWebhook
         this.username   = plugin.config.getDiscordUsername();
         this.avatarUrl  = plugin.config.getDiscordAvatarUrl();
         this.embedColor = plugin.config.getDiscordEmbedColor();
+        this.embedTitleTemplate = plugin.config.getDiscordEmbedTitle();
+        this.embedDescriptionTemplate = plugin.config.getDiscordEmbedDescription();
+        this.embedThumbnailTemplate = plugin.config.getDiscordEmbedThumbnailUrl();
     }
     
     // -------------------------------------------------------------------------
@@ -55,9 +62,9 @@ public class DiscordWebhook
      * Sends a message about detected alts to Discord
      * 
      * @param content The alt detection message (already formatted and without color codes)
-     * @param authorName The Discord author name, usually the name of the Minecraft server
+     * @param playerName The Minecraft player name that triggered the alert
      */
-    public void sendAltMessage(final String content, final String authorName)
+    public void sendAltMessage(final String content, final String playerName)
     {
         // Skip if content is null (no alts found)
         if (content == null)
@@ -88,16 +95,28 @@ public class DiscordWebhook
                         jsonMap.put("avatar_url", avatarUrl);
                     }
                     
+                    String authorName = plugin.config.getMCServerName();
+                    String title = applyPlaceholders(embedTitleTemplate, playerName, content, authorName);
+                    String description = applyPlaceholders(embedDescriptionTemplate, playerName, content, authorName);
+                    String thumbnailUrl = applyPlaceholders(embedThumbnailTemplate, playerName, content, authorName);
+
                     // Create embed
                     Map<String, Object> embed = new HashMap<>();
-                    embed.put("title", "Alt Account Detection");
-                    embed.put("description", "`" + content + "`");
+                    embed.put("title", title);
+                    embed.put("description", description);
                     embed.put("color", embedColor);
                     
                     // Add author info
                     Map<String, Object> author = new HashMap<>();
                     author.put("name", authorName);
                     embed.put("author", author);
+
+                    if (thumbnailUrl != null && !thumbnailUrl.isEmpty())
+                    {
+                        Map<String, Object> thumbnail = new HashMap<>();
+                        thumbnail.put("url", thumbnailUrl);
+                        embed.put("thumbnail", thumbnail);
+                    }
                     
                     // Add timestamp
                     embed.put("timestamp", java.time.OffsetDateTime.now().toString());
@@ -170,7 +189,7 @@ public class DiscordWebhook
     {
         if (value instanceof String)
         {
-            json.append("\"").append(((String) value).replace("\"", "\\\"")).append("\"");
+            json.append("\"").append(escapeJsonString((String) value)).append("\"");
         }
         else if (value instanceof Number || value instanceof Boolean)
         {
@@ -213,6 +232,61 @@ public class DiscordWebhook
         }
         
         json.append("]");
+    }
+
+    // -------------------------------------------------------------------------
+
+    private String applyPlaceholders(String template,
+                                     String playerName,
+                                     String content,
+                                     String serverName)
+    {
+        String value = (template == null ? "" : template);
+        String creator = (playerName == null ? "" : playerName);
+
+        value = value.replace("{creator}", creator)
+                     .replace("{player}", creator)
+                     .replace("{content}", (content == null ? "" : content))
+                     .replace("{server}", (serverName == null ? "" : serverName));
+
+        Player player = Bukkit.getPlayerExact(creator);
+        if (plugin.placeholderEnabled && player != null)
+        {
+            value = resolvePlaceholderApi(value, player);
+        }
+
+        return value;
+    }
+
+    // -------------------------------------------------------------------------
+
+    private String resolvePlaceholderApi(String text, Player player)
+    {
+        try
+        {
+            Class<?> placeholderApiClass = Class.forName("me.clip.placeholderapi.PlaceholderAPI");
+            Object result = placeholderApiClass.getMethod("setPlaceholders", Player.class, String.class).invoke(null, player, text);
+            if (result instanceof String)
+            {
+                return (String) result;
+            }
+        }
+        catch (Exception ignored)
+        {
+        }
+
+        return text;
+    }
+
+    // -------------------------------------------------------------------------
+
+    private String escapeJsonString(String value)
+    {
+        return value.replace("\\", "\\\\")
+                    .replace("\"", "\\\"")
+                    .replace("\r", "\\r")
+                    .replace("\n", "\\n")
+                    .replace("\t", "\\t");
     }
 
 }
